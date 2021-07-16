@@ -1,0 +1,42 @@
+WITH enrolled_students AS
+        (SELECT DISTINCT
+               a.sfrstcr_term_code,
+               a.sfrstcr_pidm,
+               a.sfrstcr_crn,
+               a.sfrstcr_grde_code
+          FROM sfrstcr a
+         WHERE a.sfrstcr_camp_code <> 'XXX'
+           AND a.sfrstcr_levl_code = 'UG'
+           AND a.sfrstcr_rsts_code IN
+                 (SELECT b.stvrsts_code
+                    FROM stvrsts b
+                   WHERE b.stvrsts_incl_sect_enrl = 'Y')
+           AND  SUBSTR(sfrstcr_term_code, 1, 4) BETWEEN '2019' AND '2021')
+SELECT a.sfrstcr_term_code,
+       COALESCE(dsc.f_get_race_ethn(sfrstcr_pidm), dsc.f_get_race_ethn(sfrstcr_pidm, 1), 'Unknown') AS race_ethn,
+       d.stvcamp_desc,
+       a.sfrstcr_pidm AS student_count,
+       c.ssbsect_crn,
+       c.ssbsect_subj_code,
+       c.ssbsect_crse_numb,
+       a.sfrstcr_grde_code,
+       f.sorhsch_graduation_date
+FROM enrolled_students a
+LEFT JOIN ssbsect c
+       ON a.sfrstcr_term_code = c.ssbsect_term_code
+      AND a.sfrstcr_crn = c.ssbsect_crn
+LEFT JOIN stvcamp d
+       ON c.ssbsect_camp_code = d.stvcamp_code
+LEFT JOIN sorhsch f
+       ON a.sfrstcr_pidm = f.sorhsch_pidm
+WHERE SUBSTR(a.sfrstcr_term_code, 1, 4) BETWEEN '2019' AND '2021'
+AND c.ssbsect_camp_code IN ('C22', 'C01', 'C13', 'C03', 'C02', 'C04', 'C06')
+GROUP BY a.sfrstcr_term_code, 
+COALESCE(dsc.f_get_race_ethn(sfrstcr_pidm), dsc.f_get_race_ethn(sfrstcr_pidm, 1), 'Unknown'), 
+d.stvcamp_desc, 
+a.sfrstcr_pidm, 
+c.ssbsect_crn, 
+c.ssbsect_subj_code, 
+c.ssbsect_crse_numb, 
+a.sfrstcr_grde_code, 
+f.sorhsch_graduation_date
